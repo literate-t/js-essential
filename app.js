@@ -1,21 +1,21 @@
-const container = document.getElementById("root")
-const ajax = new XMLHttpRequest()
-const NEWS_URL = "https://api.hnpwa.com/v0/news/1.json"
-const CONTENT_URL = "https://api.hnpwa.com/v0/item/@id.json"
-const content = document.createElement("div")
-const ul = document.createElement("ul")
+const container = document.getElementById("root");
+const ajax = new XMLHttpRequest();
+const NEWS_URL = "https://api.hnpwa.com/v0/news/1.json";
+const CONTENT_URL = "https://api.hnpwa.com/v0/item/@id.json";
+const content = document.createElement("div");
+const ul = document.createElement("ul");
 
-const SHOW_LIST = 10
+const SHOW_LIST = 10;
 
 const store = {
   currentPage: 1,
-}
+};
 
 function newsFeed() {
-  const newsFeed = getData(NEWS_URL)
-  const newFeedLength = newsFeed.length
-  const maximumPage = Math.ceil(newFeedLength / SHOW_LIST)
-  const newsList = []
+  const newsFeed = getData(NEWS_URL);
+  const newFeedLength = newsFeed.length;
+  const maximumPage = Math.ceil(newFeedLength / SHOW_LIST);
+  const newsList = [];
 
   let template = `
         <div class="bg-gray-600 min-h-screen">
@@ -40,12 +40,12 @@ function newsFeed() {
             {{__news_feed__}}
           </div>
         </div>
-    `
+    `;
 
   //newsList.push("<ul>");
-  let current = store.currentPage * SHOW_LIST
+  let current = store.currentPage * SHOW_LIST;
   if (current >= newFeedLength) {
-    current = newFeedLength
+    current = newFeedLength;
   }
   for (let i = (store.currentPage - 1) * SHOW_LIST; i < current; ++i) {
     newsList.push(`
@@ -66,56 +66,99 @@ function newsFeed() {
           </div>
         </div>
       </div>
-    `)
+    `);
   }
-  template = template.replace("{{__news_feed__}}", newsList.join(""))
+  template = template.replace("{{__news_feed__}}", newsList.join(""));
   template = template.replace(
     "{{__prev_page__}}",
     store.currentPage > 1 ? store.currentPage - 1 : 1
-  )
+  );
   template = template.replace(
     "{{__next_page__}}",
     store.currentPage < maximumPage ? store.currentPage + 1 : maximumPage
-  )
-  container.innerHTML = template
+  );
+  container.innerHTML = template;
 }
 
 function newsDetail() {
-  const id = location.hash.substring(7)
-  const contentUrl = CONTENT_URL.replace("@id", id)
+  const id = location.hash.substring(7);
+  const contentUrl = CONTENT_URL.replace("@id", id);
 
-  const newsContent = getData(contentUrl)
-  const title = document.createElement("h1")
-  container.innerHTML = `
-        <h1>${newsContent.title}</h1>
-        <div>
-            <a href="#/page/${store.currentPage}">목록으로</a>
+  const newsContent = getData(contentUrl);
+  const title = document.createElement("h1");
+  let template = `
+    <div class="bg-gray-600 min-h-screen pb-8">
+     <div class="bg-white text-xl">
+      <div class="mx-auto px-4">
+        <div class="flex justify-between items-center py-6">
+          <div class="flex justify-start">
+            <h1 class="font-extrabold">Hacker News</h1>
+          </div>
+          <div class="items-center justify-end">
+            <a href="#/page/${store.currentPage}" class="text-gray-500"> 
+              <i class="fa fa-times"></i>
+            </a>
+          </div>
         </div>
-    `
-  // title.innerText = newsContent.title;
-  // content.appendChild(title);
+      </div>
+     </div>
+
+     <div class="h-full border rounded-xl bg-white m-6 p-4">
+      <h2>${newsContent.title}</h2>
+      <div class="text-gray-400 h-20">
+        ${newsContent.content}
+      </div>
+        {{__comments__}}
+     </div>
+    </div>
+  `;
+
+  function makeComment(comments, called = 0) {
+    const commentString = [];
+
+    for (let i = 0; i < comments.length; ++i) {
+      commentString.push(`
+        <div style="padding-left:${called * 40}px;" class="mt-4">
+          <div class="text-gray-400">
+            <i class="fa fa-sort-up mr-2"></i>
+            <strong>${comments[i].user}</strong> ${comments[i].time_ago}
+          </div>
+          <p class="text-gray-700">${comments[i].content}</p>
+        </div>
+      `);
+      if (comments[i].comments.length > 0) {
+        commentString.push(makeComment(comments[i].comments, called + 1));
+      }
+    }
+    return commentString.join("");
+  }
+
+  container.innerHTML = template.replace(
+    "{{__comments__}}",
+    makeComment(newsContent.comments)
+  );
 }
 
 function getData(url) {
-  ajax.open("GET", url, false)
-  ajax.send()
+  ajax.open("GET", url, false);
+  ajax.send();
 
-  return JSON.parse(ajax.response)
+  return JSON.parse(ajax.response);
 }
 
 function router() {
-  const routePath = location.hash
+  const routePath = location.hash;
   if (routePath === "") {
-    newsFeed()
+    newsFeed();
   } else if (routePath.indexOf("#/page/") >= 0) {
-    store.currentPage = Number(routePath.substring(7))
-    newsFeed()
+    store.currentPage = Number(routePath.substring(7));
+    newsFeed();
   } else {
-    newsDetail()
+    newsDetail();
   }
 }
 
 //window.addEventListener("hashchange", newsDetail);
-window.addEventListener("hashchange", router)
+window.addEventListener("hashchange", router);
 
-router()
+router();
