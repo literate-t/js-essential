@@ -1,5 +1,21 @@
-const container = document.getElementById("root");
-const ajax = new XMLHttpRequest();
+type Store = {
+  currentPage: number;
+  feeds: NewsFeed[];
+}
+
+type NewsFeed = {
+  id: number;
+  comments_count: number;
+  url: string;
+  user: string;
+  time_ago: string;
+  points: number;
+  title: string;
+  read?: boolean; // optional
+}
+
+const container: HTMLElement | null  = document.getElementById("root");
+const ajax: XMLHttpRequest = new XMLHttpRequest();
 const NEWS_URL = "https://api.hnpwa.com/v0/news/1.json";
 const CONTENT_URL = "https://api.hnpwa.com/v0/item/@id.json";
 const content = document.createElement("div");
@@ -7,20 +23,29 @@ const ul = document.createElement("ul");
 
 const SHOW_LIST = 10;
 
-const store = {
+const store: Store = {
   currentPage: 1,
   feeds: [],
 };
 
 const makeFeeds = (feeds) => {
+  // i는 타입 추론 됐음
   for (let i = 0; i < feeds.length; ++i) {
     feeds[i].read = false;
   }
   return feeds;
 };
 
+function updateView(html) {
+  if(container) {
+    container.innerHTML = html;
+  } else {
+    console.error('null container');
+  }
+}
+
 function newsFeed() {
-  let newsFeed = store.feeds;
+  let newsFeed: NewsFeed[] = store.feeds;
 
   if (0 === newsFeed.length) {
     newsFeed = store.feeds = makeFeeds(getData(NEWS_URL));
@@ -94,7 +119,8 @@ function newsFeed() {
     "{{__next_page__}}",
     store.currentPage < maximumPage ? store.currentPage + 1 : maximumPage
   );
-  container.innerHTML = template;
+
+  updateView(template);
 }
 
 function newsDetail() {
@@ -156,11 +182,8 @@ function newsDetail() {
     }
     return commentString.join("");
   }
-
-  container.innerHTML = template.replace(
-    "{{__comments__}}",
-    makeComment(newsContent.comments)
-  );
+  
+  updateView(template.replace("{{__comments__}}", makeComment(newsContent.comments)));  
 }
 
 function getData(url) {
