@@ -3,18 +3,31 @@ type Store = {
   feeds: NewsFeed[];
 }
 
-type NewsFeed = {
+type News = {
   id: number;
-  comments_count: number;
+  time_ago: string;
+  title: string;
   url: string;
   user: string;
-  time_ago: string;
+  content: string;
+}
+
+type NewsFeed = News & {
+  comments_count: number;
   points: number;
-  title: string;
   read?: boolean; // optional
 }
 
-const container: HTMLElement | null  = document.getElementById("root");
+type NewsDetail = News & {
+  comments:NewsComment[];
+}
+
+type NewsComment = News & {
+  comments: NewsComment[];
+  level: number;
+}
+
+const container: HTMLElement | null  = document.getElementById("root"); // 타입 가드 사용
 const ajax: XMLHttpRequest = new XMLHttpRequest();
 const NEWS_URL = "https://api.hnpwa.com/v0/news/1.json";
 const CONTENT_URL = "https://api.hnpwa.com/v0/item/@id.json";
@@ -28,7 +41,7 @@ const store: Store = {
   feeds: [],
 };
 
-const makeFeeds = (feeds) => {
+const makeFeeds = (feeds : NewsFeed[]): NewsFeed[] => {
   // i는 타입 추론 됐음
   for (let i = 0; i < feeds.length; ++i) {
     feeds[i].read = false;
@@ -36,7 +49,7 @@ const makeFeeds = (feeds) => {
   return feeds;
 };
 
-function updateView(html) {
+function updateView(html: string): void {
   if(container) {
     container.innerHTML = html;
   } else {
@@ -44,11 +57,11 @@ function updateView(html) {
   }
 }
 
-function newsFeed() {
+function newsFeed(): void {
   let newsFeed: NewsFeed[] = store.feeds;
 
   if (0 === newsFeed.length) {
-    newsFeed = store.feeds = makeFeeds(getData(NEWS_URL));
+    newsFeed = store.feeds = makeFeeds(getData<NewsFeed[]>(NEWS_URL));
   }
 
   const newFeedLength = newsFeed.length;
@@ -113,22 +126,21 @@ function newsFeed() {
   template = template.replace("{{__news_feed__}}", newsList.join(""));
   template = template.replace(
     "{{__prev_page__}}",
-    store.currentPage > 1 ? store.currentPage - 1 : 1
+    String(store.currentPage > 1 ? store.currentPage - 1 : 1)
   );
   template = template.replace(
     "{{__next_page__}}",
-    store.currentPage < maximumPage ? store.currentPage + 1 : maximumPage
+    String(store.currentPage < maximumPage ? store.currentPage + 1 : maximumPage)
   );
 
   updateView(template);
 }
 
-function newsDetail() {
+function newsDetail(): void {
   const id = location.hash.substring(7);
   const contentUrl = CONTENT_URL.replace("@id", id);
 
-  const newsContent = getData(contentUrl);
-  const title = document.createElement("h1");
+  const newsContent = getData<NewsDetail>(contentUrl);
   let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
      <div class="bg-white text-xl">
@@ -162,38 +174,39 @@ function newsDetail() {
       break;
     }
   }
-
-  function makeComment(comments, called = 0) {
-    const commentString = [];
-
-    for (let i = 0; i < comments.length; ++i) {
-      commentString.push(`
-        <div style="padding-left:${called * 40}px;" class="mt-4">
-          <div class="text-gray-400">
-            <i class="fa fa-sort-up mr-2"></i>
-            <strong>${comments[i].user}</strong> ${comments[i].time_ago}
-          </div>
-          <p class="text-gray-700">${comments[i].content}</p>
-        </div>
-      `);
-      if (comments[i].comments.length > 0) {
-        commentString.push(makeComment(comments[i].comments, called + 1));
-      }
-    }
-    return commentString.join("");
-  }
   
   updateView(template.replace("{{__comments__}}", makeComment(newsContent.comments)));  
 }
 
-function getData(url) {
+function makeComment(comments: NewsComment[]): string {
+  const commentString = [];
+
+  for (let i = 0; i < comments.length; ++i) {
+    const comment : NewsComment = comments[i];
+    commentString.push(`
+      <div style="padding-left:${comment.level * 40}px;" class="mt-4">
+        <div class="text-gray-400">
+          <i class="fa fa-sort-up mr-2"></i>
+          <strong>${comment.user}</strong> ${comment.time_ago}
+        </div>
+        <p class="text-gray-700">${comment.content}</p>
+      </div>
+    `);
+    if (comment.comments.length > 0) {
+      commentString.push(makeComment(comment.comments));
+    }
+  }
+  return commentString.join("");
+}
+
+function getData<AjaxResponse>(url: string) : AjaxResponse {//NewsFeed[] | NewsDetail{ // union
   ajax.open("GET", url, false);
   ajax.send();
 
   return JSON.parse(ajax.response);
 }
 
-function router() {
+function router(): void {
   const routePath = location.hash;
   if (routePath === "") {
     newsFeed();
