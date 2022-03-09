@@ -1,30 +1,36 @@
-type Store = {
+// type Store = {
+//   currentPage: number;
+//   feeds: NewsFeed[];
+// }
+
+interface Store {
   currentPage: number;
   feeds: NewsFeed[];
 }
 
-type News = {
-  id: number;
-  time_ago: string;
-  title: string;
-  url: string;
-  user: string;
-  content: string;
+
+interface News {
+  readonly id: number;
+  readonly time_ago: string;
+  readonly title: string;
+  readonly url: string;
+  readonly user: string;
+  readonly content: string;
 }
 
-type NewsFeed = News & {
-  comments_count: number;
-  points: number;
+interface NewsFeed extends News {
+  readonly comments_count: number;
+  readonly points: number;
   read?: boolean; // optional
 }
 
-type NewsDetail = News & {
-  comments:NewsComment[];
+interface NewsDetail extends News {
+  readonly comments:NewsComment[];
 }
 
-type NewsComment = News & {
-  comments: NewsComment[];
-  level: number;
+interface NewsComment extends News {
+  readonly comments: NewsComment[];
+  readonly level: number;
 }
 
 const container: HTMLElement | null  = document.getElementById("root"); // 타입 가드 사용
@@ -40,6 +46,80 @@ const store: Store = {
   currentPage: 1,
   feeds: [],
 };
+
+// class Api {
+//   url: string;
+//   ajax: XMLHttpRequest;
+
+//   constructor(url: string) {
+//     this.url = url;
+//     this.ajax = new XMLHttpRequest();
+//   }
+
+//   protected getRequest<AjaxResponse>(): AjaxResponse {
+//     this.ajax.open("GET", this.url, false);
+//     this.ajax.send();
+  
+//     return JSON.parse(this.ajax.response);
+//   }
+// }
+
+// class NewsFeedApi extends Api {
+//   getData(): NewsFeed[] {
+//     return this.getRequest<NewsFeed[]>();
+//   }
+// }
+
+// class NewsDetailApi extends Api {
+//   getData(): NewsDetail {
+//     return this.getRequest<NewsDetail>();
+//   }
+// }
+
+// 상속과 다른 점
+// 1. 유연함(하위 클래스에 extends를 적시하기 때문)
+// 2. js, ts에서 다중상속을 지원하지 않음
+function applyApiMixins(targetClass: any, baseClasss: any[]): void {
+  baseClasss.forEach(baseClass => {
+    Object.getOwnPropertyNames(baseClass.prototype).forEach(name=> {
+      const descriptor = Object.getOwnPropertyDescriptor(baseClass.prototype, name);
+
+      if (descriptor) {
+        Object.defineProperty(targetClass.prototype, name, descriptor);
+      }
+    })
+  })
+}
+
+class Api {
+  getRequest<AjaxResponse>(url: string): AjaxResponse {
+    const ajax = new XMLHttpRequest();
+    ajax.open("GET", url, false);
+    ajax.send();
+  
+    return JSON.parse(ajax.response);
+  }
+}
+
+class NewsFeedApi {  
+  getData(url: string): NewsFeed[] {
+    // 믹스인을 통해 합성됐다는 것을 컴파일러가 알 수 없으므로 interface를 정의
+    return this.getRequest<NewsFeed[]>(url); 
+  }
+}
+
+class NewsDetailApi {
+  getData(url: string): NewsDetail {
+    // 믹스인을 통해 합성됐다는 것을 컴파일러가 알 수 없으므로 interface를 정의
+    return this.getRequest<NewsDetail>(url);
+  }
+}
+
+interface NewsFeedApi extends Api {};
+interface NewsDetailApi extends Api {};
+
+applyApiMixins(NewsFeedApi, [Api]);
+applyApiMixins(NewsDetailApi, [Api]);
 
 const makeFeeds = (feeds : NewsFeed[]): NewsFeed[] => {
   // i는 타입 추론 됐음
@@ -58,10 +138,11 @@ function updateView(html: string): void {
 }
 
 function newsFeed(): void {
+  const api = new NewsFeedApi();
   let newsFeed: NewsFeed[] = store.feeds;
 
   if (0 === newsFeed.length) {
-    newsFeed = store.feeds = makeFeeds(getData<NewsFeed[]>(NEWS_URL));
+    newsFeed = store.feeds = makeFeeds(api.getData(NEWS_URL));
   }
 
   const newFeedLength = newsFeed.length;
@@ -139,8 +220,10 @@ function newsFeed(): void {
 function newsDetail(): void {
   const id = location.hash.substring(7);
   const contentUrl = CONTENT_URL.replace("@id", id);
+  const api = new NewsDetailApi();
+  
 
-  const newsContent = getData<NewsDetail>(contentUrl);
+  const newsContent = api.getData(contentUrl);
   let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
      <div class="bg-white text-xl">
@@ -197,13 +280,6 @@ function makeComment(comments: NewsComment[]): string {
     }
   }
   return commentString.join("");
-}
-
-function getData<AjaxResponse>(url: string) : AjaxResponse {//NewsFeed[] | NewsDetail{ // union
-  ajax.open("GET", url, false);
-  ajax.send();
-
-  return JSON.parse(ajax.response);
 }
 
 function router(): void {
