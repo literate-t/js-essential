@@ -298,3 +298,51 @@
 // window.addEventListener("hashchange", router);
 
 // router();
+
+// ---------------------------------------------------------------------------------------
+
+// const container: HTMLElement | null  = document.getElementById("root"); // 타입 가드 사용
+
+// 상속과 다른 점
+// 1. 유연함(하위 클래스에 extends를 적시하기 때문)
+// 2. js, ts에서 다중상속을 지원하지 않음
+// function applyApiMixins(targetClass: any, baseClasss: any[]): void {
+//   baseClasss.forEach(baseClass => {
+//     Object.getOwnPropertyNames(baseClass.prototype).forEach(name=> {
+//       const descriptor = Object.getOwnPropertyDescriptor(baseClass.prototype, name);
+
+//       if (descriptor) {
+//         Object.defineProperty(targetClass.prototype, name, descriptor);
+//       }
+//     })
+//   })
+// }
+
+// class Api {
+//   getRequest<AjaxResponse>(url: string): AjaxResponse {
+//     const ajax = new XMLHttpRequest();
+//     ajax.open("GET", url, false);
+//     ajax.send();
+  
+//     return JSON.parse(ajax.response);
+//   }
+// }
+
+// class NewsFeedApi {  
+//   getData(url: string): NewsFeed[] {
+//     // 믹스인을 통해 합성됐다는 것을 컴파일러가 알 수 없으므로 interface를 정의
+//     return this.getRequest<NewsFeed[]>(url); 
+//   }
+// }
+
+// class NewsDetailApi {
+//   getData(url: string): NewsDetail {
+//     // 믹스인을 통해 합성됐다는 것을 컴파일러가 알 수 없으므로 interface를 정의
+//     return this.getRequest<NewsDetail>(url);
+//   }
+// }
+// interface NewsFeedApi extends Api {};
+// interface NewsDetailApi extends Api {};
+//--------------------------------------------------------------------------------
+// applyApiMixins(NewsFeedApi, [Api]);
+// applyApiMixins(NewsDetailApi, [Api]);
