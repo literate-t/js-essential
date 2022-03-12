@@ -1,10 +1,10 @@
-import { NewsFeed } from "./types"
+import { NewsFeed, NewsStore } from "./types"
 
-class Store {
-    private feeds: NewsFeed[];
+export default class Store implements NewsStore {
+    private _feeds: NewsFeed[];
     private _currentPage: number;
     constructor() {
-        this.feeds = [];
+        this._feeds = [];
         this._currentPage = 1;
     }
 
@@ -29,27 +29,32 @@ class Store {
     }
 
     get lengthOfFeed(): number {
-        return this.feeds.length;
+        return this._feeds.length;
     }
 
     get hasFeeds(): boolean {
-        return this.feeds.length > 0;
+        return this._feeds.length > 0;
     }
 
     getAllFeeds(): NewsFeed[] {
-        return this.feeds;
+        return this._feeds;
     }
 
     getFeed(index: number) {
-        return this.feeds[index];
+        return this._feeds[index];
     }
 
     setFeeds(feeds: NewsFeed[]): void {
-        this.feeds = feeds.map(feed=>({
+        this._feeds = feeds.map((feed:NewsFeed)=>({
           ...feed,
           read: false  
         }));
     }
 
-    
+    makeRead(id: number): void {
+        const feed = this._feeds.find((feed:NewsFeed) => feed.id === id);
+        if (feed) {
+            feed.read = true;
+        }
+    }
 }

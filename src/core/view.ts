@@ -1,4 +1,4 @@
-import {get} from "../lib"
+import { get } from "../lib"
 
 export default abstract class View {
     private template: string;

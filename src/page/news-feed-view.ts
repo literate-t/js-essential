@@ -1,6 +1,6 @@
 import View from "../core/view";
 import { NewsFeedApi } from "../core/api";
-import { NewsFeed } from "../types";
+import { NewsStore } from "../types";
 import { NEWS_URL } from "../config";
 import { SHOW_LIST } from "../config";
 
@@ -32,35 +32,34 @@ const template = `
 export default class NewsFeedView extends View {
 
     private api: NewsFeedApi;
-    private feeds: NewsFeed[];
+    private store: NewsStore;
   
-    constructor(containerId: string) {
+    constructor(containerId: string, store: NewsStore) {
 
       super(containerId, template);
   
-      this.api = new NewsFeedApi(NEWS_URL);
-      this.feeds = window.store.feeds;
+      this.store = store;
+      this.api = new NewsFeedApi(NEWS_URL);      
     
-      if (0 === this.feeds.length) {
-        this.feeds = window.store.feeds = this.api.getData();
-        this.makeFeeds();
+      if (!this.store.hasFeeds) {
+        this.store.setFeeds(this.api.getData());
       }
     }
   
     render(): void {
       // default page를 보여줄 때의 처리
       // hash가 ''
-      window.store.currentPage = Number(location.hash.substring(7) || 1);
-      let current = window.store.currentPage * SHOW_LIST;
-      const newFeedLength = this.feeds.length;
+      this.store.currentPage = Number(location.hash.substring(7) || 1);
+      let current = this.store.currentPage * SHOW_LIST;
+      const newFeedLength = this.store.lengthOfFeed;
       const maximumPage = Math.ceil(newFeedLength / SHOW_LIST);
   
       if (current >= newFeedLength) {
         current = newFeedLength;
       }
   
-      for (let i = (window.store.currentPage - 1) * SHOW_LIST; i < current; ++i) {
-        const {id, title, comments_count, user, points, time_ago, read} = this.feeds[i];
+      for (let i = (this.store.currentPage - 1) * SHOW_LIST; i < current; ++i) {
+        const {id, title, comments_count, user, points, time_ago, read} = this.store.getFeed(i);
         this.addHtml(`
           <div class="p-6 ${
             read ? "bg-red-500" : "bg-white"
@@ -87,15 +86,8 @@ export default class NewsFeedView extends View {
       } 
   
       this.setTemplateData('news_feed', this.getHtml());
-      this.setTemplateData('prev_page', String(window.store.currentPage > 1 ? window.store.currentPage - 1 : 1));
-      this.setTemplateData('next_page', String(window.store.currentPage < maximumPage ? window.store.currentPage + 1 : maximumPage));
-      this.updateView();
-    }
-  
-    private makeFeeds(): void {
-      // i는 타입 추론 됐음
-      for (let i = 0; i < this.feeds.length; ++i) {
-        this.feeds[i].read = false;
-      }    
+      this.setTemplateData('prev_page', String(this.store.prevPage));
+      this.setTemplateData('next_page', String(this.store.nextPage));
+      this.updateView();    
     }
   }
