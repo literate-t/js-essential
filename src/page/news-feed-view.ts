@@ -43,16 +43,15 @@ export default class NewsFeedView extends View {
     
     }
     
-    render = (page: string = '1'): void => {
+    render = async (page: string = '1'): Promise<void> => {
       // default page를 보여줄 때의 처리
       // hash가 ''
       this.store.currentPage = Number(page);
 
       if (!this.store.hasFeeds) {
-        this.api.getDataWithPromise((feeds: NewsFeed[])=>{
-          this.store.setFeeds(feeds);
-          this.randerView();
-        })        
+        const feeds = await this.api.getData();
+        this.store.setFeeds(feeds);
+        //this.randerView();
       }
       this.randerView();
     }
