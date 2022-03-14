@@ -2,32 +2,51 @@ import {NewsFeed, NewsDetail } from '../types/index'
 
 export class Api {
     url: string;
-    ajax: XMLHttpRequest;
+    xhr: XMLHttpRequest;
   
     constructor(url: string) {
       this.url = url;
-      this.ajax = new XMLHttpRequest();
+      this.xhr = new XMLHttpRequest();
     }
   
-    protected getRequest<AjaxResponse>(callback: (data:AjaxResponse) => void): void {
-      //this.ajax.open("GET", this.url, false);
-      this.ajax.open("GET", this.url);
-      this.ajax.addEventListener('load', () => {
-        callback(JSON.parse(this.ajax.response));
+    protected getRequestWithXHR<AjaxResponse>(callback: (data:AjaxResponse) => void): void {
+      //this.xhr.open("GET", this.url, false);
+      this.xhr.open("GET", this.url);
+      this.xhr.addEventListener('load', () => {
+        callback(JSON.parse(this.xhr.response));
       })
-      this.ajax.send();
+      this.xhr.send();
+    }
+
+    protected getRequestWithPromise<AjaxResponse>(callback: (data:AjaxResponse) => void): void {
+      fetch(this.url)
+      .then(res=>res.json())
+      .then(callback)
+      .catch(()=>{
+        console.log('failed to load datas');
+      })
     }
   }
+
+
   
   export class NewsFeedApi extends Api {
     // 여기서 super 호출을 안 했는데 오류가 안 났네?..
-    getData(): NewsFeed[] {
-      return this.getRequest<NewsFeed[]>();
+    getDataWithXHR(callback: (data: NewsFeed[]) => void): void {
+      this.getRequestWithXHR<NewsFeed[]>(callback);
+    }
+
+    getDataWithPromise(callback: (data: NewsFeed[]) => void): void {
+      this.getRequestWithPromise<NewsFeed[]>(callback);
     }
   }
   
   export class NewsDetailApi extends Api {
-    getData(): NewsDetail {
-      return this.getRequest<NewsDetail>();
+    getDataWithXHR(callback: (data:NewsDetail) => void) {
+      this.getRequestWithXHR<NewsDetail>(callback);
+    }
+
+    getDataWithPromise(callback: (data:NewsDetail) => void) {
+      this.getRequestWithPromise<NewsDetail>(callback);
     }
   }

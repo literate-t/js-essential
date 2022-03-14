@@ -5,8 +5,7 @@ export default class Router {
     routeTable: RouteInfo[];
     defaultRoute: RouteInfo | null;
   
-    constructor() {
-  
+    constructor() {  
       window.addEventListener("hashchange", this.route.bind(this));
       this.routeTable = [];
       this.defaultRoute = null;

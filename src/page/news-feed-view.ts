@@ -1,6 +1,6 @@
 import View from "../core/view";
 import { NewsFeedApi } from "../core/api";
-import { NewsStore } from "../types";
+import { NewsStore, NewsFeed } from "../types";
 import { NEWS_URL } from "../config";
 import { SHOW_LIST } from "../config";
 
@@ -41,19 +41,25 @@ export default class NewsFeedView extends View {
       this.store = store;
       this.api = new NewsFeedApi(NEWS_URL);      
     
-      if (!this.store.hasFeeds) {
-        this.store.setFeeds(this.api.getData());
-      }
     }
-  
-    render(): void {
+    
+    render = (page: string = '1'): void => {
       // default page를 보여줄 때의 처리
       // hash가 ''
-      this.store.currentPage = Number(location.hash.substring(7) || 1);
+      this.store.currentPage = Number(page);
+
+      if (!this.store.hasFeeds) {
+        this.api.getDataWithPromise((feeds: NewsFeed[])=>{
+          this.store.setFeeds(feeds);
+          this.randerView();
+        })        
+      }
+      this.randerView();
+    }
+    
+    randerView = () => {      
       let current = this.store.currentPage * SHOW_LIST;
-      const newFeedLength = this.store.lengthOfFeed;
-      const maximumPage = Math.ceil(newFeedLength / SHOW_LIST);
-  
+      const newFeedLength = this.store.lengthOfFeed;  
       if (current >= newFeedLength) {
         current = newFeedLength;
       }

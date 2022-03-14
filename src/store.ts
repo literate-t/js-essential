@@ -1,4 +1,5 @@
 import { NewsFeed, NewsStore } from "./types"
+import { SHOW_LIST } from "./config";
 
 export default class Store implements NewsStore {
     private _feeds: NewsFeed[];
@@ -21,7 +22,8 @@ export default class Store implements NewsStore {
     }
 
     get nextPage(): number {
-        return this._currentPage + 1;
+        const maximumPage = Math.ceil(this._feeds.length / SHOW_LIST);
+        return maximumPage <= this._currentPage + 1 ? maximumPage : this._currentPage + 1;
     }
 
     get prevPage(): number {
